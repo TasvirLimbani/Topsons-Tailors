@@ -47,13 +47,13 @@ export function CartView() {
         <div className="space-y-6 lg:col-span-2">
           {items.map((item) => (
             <div
-              key={item.product.id}
+              key={item.product.product_id as unknown as string}
               className="flex gap-6 rounded-sm border border-border bg-card p-4"
             >
               <div className="relative aspect-[3/4] w-28 shrink-0 overflow-hidden rounded-sm bg-secondary">
                 <Image
                   src={item.product.images[0]}
-                  alt={item.product.name}
+                  alt={item.product.product_name}
                   fill
                   className="object-cover"
                 />
@@ -66,18 +66,18 @@ export function CartView() {
                       {item.product.fabric}
                     </p>
                     <h3 className="mt-1 font-serif text-lg text-foreground">
-                      {item.product.name}
+                      {item.product.product_name}
                     </h3>
                     <p className="mt-0.5 text-sm text-foreground">
                       {"\u20B9"}
-                      {item.product.basePrice.toLocaleString("en-IN")}
+                      {item.product.discounted_price.toLocaleString("en-IN")}
                       {item.monogram && " + \u20B9499"}
                     </p>
                   </div>
                   <button
-                    onClick={() => removeItem(item.product.id)}
+                    onClick={() => removeItem(item.product.product_id as unknown as string)}
                     className="text-muted-foreground transition-colors hover:text-destructive"
-                    aria-label={`Remove ${item.product.name}`}
+                    aria-label={`Remove ${item.product.product_name}`}
                   >
                     <Trash2 className="size-4" />
                   </button>
@@ -111,7 +111,7 @@ export function CartView() {
 
                 <div className="mt-auto flex items-center gap-3 pt-3">
                   <button
-                    onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                    onClick={() => updateQuantity(item.product.product_id as unknown as string, item.quantity - 1)}
                     className="flex size-8 items-center justify-center rounded-sm border border-border text-foreground transition-colors hover:bg-secondary"
                     aria-label="Decrease quantity"
                   >
@@ -121,7 +121,7 @@ export function CartView() {
                     {item.quantity}
                   </span>
                   <button
-                    onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                    onClick={() => updateQuantity(item.product.product_id as unknown as string, item.quantity + 1)}
                     className="flex size-8 items-center justify-center rounded-sm border border-border text-foreground transition-colors hover:bg-secondary"
                     aria-label="Increase quantity"
                   >
