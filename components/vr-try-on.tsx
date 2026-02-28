@@ -50,45 +50,40 @@ export function VrTryOnButton({
 
   // ✅ CALL SERVER ROUTE
   const handleTryOn = async () => {
-    if (!file) return alert("Please upload your photo")
-    console.log("Product Image URL::::::::::::::::::::::::  ", productImageUrl) // ✅ DEBUG
-    const formData = new FormData()
-    formData.append("image", file)
-    formData.append("url-apparel", productImageUrl)
+    if (!file) return alert("Please upload your photo");
 
-    setLoading(true)
-    setShowSimmer(true) // OPTIONAL: show simmer while loading
+    setLoading(true);
+    setShowSimmer(true); // start shimmer
 
-    try {
-      const res = await fetch("/api/virtualtryon", {
-        method: "POST",
-        body: formData,
-      })
+    // ensure shimmer renders before API call
+    setTimeout(async () => {
+      try {
+        const formData = new FormData();
+        formData.append("image", file);
+        formData.append("url-apparel", productImageUrl);
 
-      if (!res.ok) {
-        throw new Error("API request failed")
+        const res = await fetch("/api/virtualtryon", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) throw new Error("API request failed");
+
+        const data: VirtualTryOnAPIResponse = await res.json();
+        const base64Image = data.results?.[0]?.entities?.[0]?.image;
+
+        if (!base64Image) throw new Error("No image returned from AI");
+
+        setPreview(`data:image/jpeg;base64,${base64Image}`);
+      } catch (err) {
+        console.error(err);
+        alert("Virtual try-on failed");
+      } finally {
+        setLoading(false);
+        setShowSimmer(false);
       }
-
-      const data: VirtualTryOnAPIResponse = await res.json()
-
-      const base64Image =
-        data.results?.[0]?.entities?.[0]?.image
-
-      if (!base64Image) {
-        throw new Error("No image returned from AI")
-      }
-
-      // ✅ REQUIRED PREFIX
-      setPreview(`data:image/jpeg;base64,${base64Image}`)
-    } catch (err) {
-      console.error(err)
-      alert("Virtual try-on failed")
-    } finally {
-      setLoading(false)
-      setShowSimmer(false) // OPTIONAL: show simmer while loading
-
-    }
-  }
+    }, 50); // small delay ensures React renders shimmer
+  };
   return (
     <>
       {/* 🔹 OPEN BUTTON */}
@@ -114,7 +109,7 @@ export function VrTryOnButton({
 
           <div className="flex flex-col items-center gap-6 py-8">
             {/* 🔹 IMAGE UPLOAD / RESULT */}
-            <label htmlFor="tryon-upload"
+            {/* <label htmlFor="tryon-upload"
               className="rounded-md group relative flex flex-col items-center justify-center w-72 h-72 max-w-sm h-48 p-1 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-primary hover:bg-primary/10 transition-colors duration-300">
 
               {preview ? (
@@ -134,6 +129,28 @@ export function VrTryOnButton({
                     Click or Drag & Drop to upload
                   </p>
                 </label>
+              )}
+            </label> */}
+
+            <label
+              htmlFor="tryon-upload"
+              className="rounded-md relative flex flex-col items-center justify-center w-72 h-72 max-w-sm p-1 border-2 border-dashed border-gray-300 cursor-pointer hover:border-primary hover:bg-primary/10 transition-colors duration-300"
+            >
+              {showSimmer ? (
+                <FancyShimmer className="w-full h-full rounded-md" />
+              ) : preview ? (
+                <img
+                  src={preview}
+                  alt="Try-on preview"
+                  className="h-full w-full rounded-md object-contain"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center gap-4">
+                  <Upload className="w-10 h-10 text-primary group-hover:text-primary/80 transition-colors duration-300" />
+                  <p className="mt-4 text-center text-gray-600 group-hover:text-gray-800 font-medium">
+                    Click or Drag & Drop to upload
+                  </p>
+                </div>
               )}
             </label>
 

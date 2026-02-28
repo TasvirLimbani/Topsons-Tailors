@@ -1,6 +1,3 @@
-
-
-
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
@@ -14,75 +11,84 @@ import { VrTryOnButton } from "@/components/vr-try-on"
 import { useCart } from "@/lib/cart-context"
 import { useWishlist } from "@/lib/wishlist-context"
 import { getCustomizationForCategory, Product } from "@/lib/products"
+import { useAuth } from "@/lib/auth-context"
+
+// ✅ Interface outside component
+interface WishlistButtonProps {
+  product_id: number
+  user_id: number
+}
 
 export function ProductDetail({ id }: { id: string }) {
   const router = useRouter()
   const { addItem, getItemQuantity, updateQuantity } = useCart()
   const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist()
 
+  // ✅ All hooks at top level
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
-
   const [selectedImage, setSelectedImage] = useState(0)
   const [drawerOpen, setDrawerOpen] = useState(false)
-
   const [mainSelections, setMainSelections] = useState<Record<string, string>>({})
   const [advancedSelections, setAdvancedSelections] = useState<Record<string, string>>({})
   const [monogram, setMonogram] = useState("")
+  const [isWishlisted, setIsWishlisted] = useState(false)
+  const { user } = useAuth()
 
-  // ✅ Fetch using ID
+  const user_id = user?.user_id;
+  // ✅ Fetch product by ID
   useEffect(() => {
     if (!id) return
 
-    console.log("ID:", id)
-    console.log("Fetching product...")
     let ignore = false
 
     const fetchProduct = async () => {
       try {
         setLoading(true)
-
         const res = await fetch(
           `/api/productdetail?product_id=${encodeURIComponent(id)}`,
           { cache: "no-store" }
         )
-
-
-
         if (!res.ok) throw new Error("Network error")
-
         const data = await res.json()
-
-        if (!ignore) {
-          if (data?.product) {
-            setProduct(data.product)
-
-          } else {
-            setProduct(null)
-          }
-        }
+        if (!ignore) setProduct(data?.product || null)
       } catch (err) {
-        console.error("Fetch error:", err)
         if (!ignore) setProduct(null)
+        console.error("Fetch error:", err)
       } finally {
         if (!ignore) setLoading(false)
       }
     }
 
     fetchProduct()
-
-    return () => {
-      ignore = true
-    }
+    return () => { ignore = true }
   }, [id])
 
-  // ✅ Compute customization AFTER product loads
+  // ✅ Fetch wishlist status
+  useEffect(() => {
+    if (!id) return
+    const checkWishlist = async () => {
+      try {
+        const res = await fetch(`/api/wishlist?user_id=${user_id}`)
+        const data = await res.json()
+        if (data.wishlist) {
+          const found = data.wishlist.some((item: any) => item.product_id == id)
+          setIsWishlisted(found)
+        }
+      } catch (err) {
+        console.error("Wishlist fetch error:", err)
+      }
+    }
+    checkWishlist()
+  }, [id])
+
+  // ✅ Compute customization
   const customization = useMemo(() => {
     if (!product) return null
     return getCustomizationForCategory(product.category_name)
   }, [product])
 
-  // ✅ Initialize selections once customization is available
+  // ✅ Initialize selections
   useEffect(() => {
     if (!customization) return
 
@@ -100,56 +106,9 @@ export function ProductDetail({ id }: { id: string }) {
     setAdvancedSelections(advancedDefaults)
   }, [customization])
 
-  if (loading) {
-    return (
-      <div className="mx-auto max-w-7xl px-6 py-8 animate-pulse">
-        <div className="grid gap-12 lg:grid-cols-2">
-
-          {/* Image Skeleton */}
-          <div className="space-y-4">
-            <div className="aspect-[3/4] rounded-sm bg-gray-200" />
-            <div className="flex gap-3">
-              <div className="w-20 aspect-square bg-gray-200 rounded-sm" />
-              <div className="w-20 aspect-square bg-gray-200 rounded-sm" />
-              <div className="w-20 aspect-square bg-gray-200 rounded-sm" />
-            </div>
-          </div>
-
-          {/* Content Skeleton */}
-          <div className="space-y-6">
-            <div className="h-4 w-32 bg-gray-200 rounded" />
-            <div className="h-8 w-64 bg-gray-200 rounded" />
-            <div className="h-6 w-40 bg-gray-200 rounded" />
-
-            <div className="space-y-3">
-              <div className="h-4 w-full bg-gray-200 rounded" />
-              <div className="h-4 w-5/6 bg-gray-200 rounded" />
-              <div className="h-4 w-4/6 bg-gray-200 rounded" />
-            </div>
-
-            <div className="h-12 w-full bg-gray-200 rounded" />
-            <div className="h-12 w-full bg-gray-200 rounded" />
-          </div>
-
-        </div>
-      </div>
-    )
-  }
-  if (!product || !customization) return <div className="p-10">Product not found.</div>
-
-  const wishlisted = isInWishlist(id as string)
-  const quantity = getItemQuantity(id as string)
-
-  const categoryLabel =
-    product.category_name.toLowerCase() === "shirts"
-      ? "Shirt"
-      : product.category_name.toLowerCase() === "pants"
-        ? "Trousers"
-        : "Blazer"
-
-  const showMonogram = product.category_name.toLowerCase() !== "pants"
-
+  // ✅ Add to Bag
   const handleAddToBag = () => {
+    if (!product) return
     addItem({
       product,
       quantity: 1,
@@ -159,14 +118,69 @@ export function ProductDetail({ id }: { id: string }) {
     })
   }
 
-  const handleWishlist = () => {
-    if (wishlisted) {
-      removeFromWishlist(id as string)
-    } else {
-      addToWishlist(product)
+  // ✅ Wishlist toggle function
+  const toggleWishlist = async () => {
+    if (!id) return
+    try {
+      const action = isWishlisted ? "remove" : "add"
+      const res = await fetch("/api/wishlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id, product_id: id, action }),
+      })
+      const data = await res.json()
+      if (!data.error) {
+        setIsWishlisted(!isWishlisted)
+      } else {
+        console.error(data.error)
+      }
+    } catch (err) {
+      console.error("Wishlist toggle error:", err)
     }
   }
 
+  // ✅ Loading skeleton
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-7xl px-6 py-8 animate-pulse">
+        <div className="grid gap-12 lg:grid-cols-2">
+          <div className="space-y-4">
+            <div className="aspect-[3/4] rounded-sm bg-gray-200" />
+            <div className="flex gap-3">
+              <div className="w-20 aspect-square bg-gray-200 rounded-sm" />
+              <div className="w-20 aspect-square bg-gray-200 rounded-sm" />
+              <div className="w-20 aspect-square bg-gray-200 rounded-sm" />
+            </div>
+          </div>
+          <div className="space-y-6">
+            <div className="h-4 w-32 bg-gray-200 rounded" />
+            <div className="h-8 w-64 bg-gray-200 rounded" />
+            <div className="h-6 w-40 bg-gray-200 rounded" />
+            <div className="space-y-3">
+              <div className="h-4 w-full bg-gray-200 rounded" />
+              <div className="h-4 w-5/6 bg-gray-200 rounded" />
+              <div className="h-4 w-4/6 bg-gray-200 rounded" />
+            </div>
+            <div className="h-12 w-full bg-gray-200 rounded" />
+            <div className="h-12 w-full bg-gray-200 rounded" />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!product || !customization) return <div className="p-10">Product not found.</div>
+
+  const wishlisted = isWishlisted
+  const quantity = getItemQuantity(id as string)
+  const categoryLabel =
+    product.category_name.toLowerCase() === "shirts"
+      ? "Shirt"
+      : product.category_name.toLowerCase() === "pants"
+        ? "Trousers"
+        : "Blazer"
+
+  const showMonogram = product.category_name.toLowerCase() !== "pants"
   const advancedCount = Object.keys(advancedSelections).length
 
   return (
@@ -467,17 +481,18 @@ export function ProductDetail({ id }: { id: string }) {
 
               {/* Wishlist Button */}
               <button
-                onClick={handleWishlist}
+                onClick={toggleWishlist}
                 className={`flex items-center justify-center gap-2 rounded-sm border py-4 text-sm font-medium tracking-widest uppercase transition-all ${wishlisted
                   ? "border-primary bg-primary/5 text-primary"
                   : "border-border text-foreground hover:border-primary/50 hover:bg-primary/5"
                   }`}
               >
                 <Heart
-                  className={`size-4 ${wishlisted ? "fill-primary text-primary" : ""}`}
+                  className={`size-4 ${isWishlisted ? "fill-primary text-primary" : ""}`}
                 />
-                {wishlisted ? "Wishlisted" : "Add to Wishlist"}
+                {isWishlisted ? "Wishlisted" : "Add to Wishlist"}
               </button>
+
 
               {/* Try On Yourself */}
               <VrTryOnButton productImageUrl={product.image || product.images![selectedImage]} />

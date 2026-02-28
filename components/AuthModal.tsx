@@ -89,9 +89,11 @@ export function AuthModal() {
         }
 
         login({
-          id: Number(apiUser.id),
+          user_id: Number(apiUser.user_id),
           email: apiUser.email,
-          name: `${apiUser.first_name || ""} ${apiUser.last_name || ""}`,
+          first_name: `${apiUser.first_name || ""}`,
+          last_name: `${apiUser.last_name || ""}`,
+          phone: apiUser.phone || "",
         })
 
         closeAuth()

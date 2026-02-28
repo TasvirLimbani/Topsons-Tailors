@@ -509,6 +509,7 @@ import {
     X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth-context";
 
 interface UserProfile {
     user_id: number;
@@ -539,12 +540,14 @@ export default function UpdateProfilePage() {
     const [updateLoading, setUpdateLoading] = useState(false);
     const [message, setMessage] = useState("");
 
-    const userId = 1;
+  const { user } = useAuth()
 
+  const user_id = user?.user_id;
+  // ✅ Fetch product by ID
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const res = await fetch(`/api/profile?user_id=${userId}`);
+                const res = await fetch(`/api/profile?user_id=${user_id}`);
                 const data = await res.json();
                 if (data.user) {
                     setProfile(data.user);
@@ -558,7 +561,7 @@ export default function UpdateProfilePage() {
             }
         };
         fetchProfile();
-    }, [userId]);
+    }, [user_id]);
 
     if (loading) return <div className="text-center mt-40">Loading Profile...</div>;
     if (!profile) return <div className="text-center mt-40 text-red-500">Failed</div>;

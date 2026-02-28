@@ -88,9 +88,11 @@
 import { createContext, useContext, useEffect, useState } from "react"
 
 type User = {
-  id: number
+  user_id: number
   email: string
-  name?: string
+  first_name?: string
+  last_name?: string
+  phone?: string
 }
 
 type AuthContextType = {

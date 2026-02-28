@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     const res = await fetch('https://api4ai.cloud/virtual-try-on/v1/results', {
       method: "POST",
       headers: {
-        "X-API-KEY": "a4a-oYWVRkHID82WbTnOTHhArWCIEx5DxxuQ", // ✅ REQUIRED
+        "X-API-KEY": "a4a-8tZmyH2nBxNxJovWxqbp58WX3sPxAxSg", // ✅ REQUIRED
       },
       body: forwardForm,
     })
