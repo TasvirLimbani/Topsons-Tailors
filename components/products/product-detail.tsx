@@ -187,7 +187,7 @@ export function ProductDetail({ id }: { id: string }) {
 
   return (
     <>
-      <div className="mx-auto max-w-7xl px-6 py-8">
+      <div className="mx-auto max-w-7xl px-6 py-16">
         {/* Breadcrumb */}
         <nav className="mb-8 flex items-center gap-2 text-xs text-muted-foreground">
           <button onClick={() => router.push("/")}>Home</button>
