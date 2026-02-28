@@ -147,7 +147,7 @@ export function Navbar() {
             {user ? (
               <>
                 <h3 className="font-serif text-xl">
-                  Welcome, {user.name}
+                  Welcome, {user.first_name}
                 </h3>
 
                 <Link

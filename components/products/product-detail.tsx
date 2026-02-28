@@ -33,7 +33,7 @@ export function ProductDetail({ id }: { id: string }) {
   const [advancedSelections, setAdvancedSelections] = useState<Record<string, string>>({})
   const [monogram, setMonogram] = useState("")
   const [isWishlisted, setIsWishlisted] = useState(false)
-  const { user } = useAuth()
+  const { user, openLogin, openSignup, logout } = useAuth()
 
   const user_id = user?.user_id;
   // ✅ Fetch product by ID
@@ -121,6 +121,8 @@ export function ProductDetail({ id }: { id: string }) {
   // ✅ Wishlist toggle function
   const toggleWishlist = async () => {
     if (!id) return
+    if(user_id === undefined) return                         openLogin()
+
     try {
       const action = isWishlisted ? "remove" : "add"
       const res = await fetch("/api/wishlist", {
